@@ -328,6 +328,18 @@
             android:exported="false" />
 
         <receiver
+            android:name=".receivers.DynamicIslandReceiver"
+            android:directBootAware="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.miui.dynamicisland.ACTION_ANSWER" />
+                <action android:name="com.miui.dynamicisland.ACTION_DECLINE" />
+                <action android:name="com.miui.dynamicisland.ACTION_END" />
+                <action android:name="com.miui.dynamicisland.ACTION_OPEN_CALL" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
             android:name=".receivers.MissedCallReceiver"
             android:enabled="true"
             android:exported="true">

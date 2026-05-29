@@ -1,6 +1,8 @@
 package com.goodwy.dialer.services
 
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
 import android.telecom.Call
 import android.telecom.CallAudioState
 import android.telecom.InCallService
@@ -21,6 +23,8 @@ import org.greenrobot.eventbus.EventBus
 class CallService : InCallService() {
     private val context = this
     private val callNotificationManager by lazy { CallNotificationManager(this) }
+    private val broadcastHandler = Handler(Looper.getMainLooper())
+    private var broadcastRunnable: Runnable? = null
 
     private val callListener = object : Call.Callback() {
         override fun onStateChanged(call: Call, state: Int) {
@@ -37,6 +41,12 @@ class CallService : InCallService() {
             } catch (_: Exception) { }
 
             sendCallUpdateBroadcast(call)
+
+            if (state == Call.STATE_ACTIVE) {
+                startBroadcastTimer()
+            } else if (state == Call.STATE_DISCONNECTED || state == Call.STATE_DISCONNECTING) {
+                stopBroadcastTimer()
+            }
         }
     }
 
@@ -46,6 +56,7 @@ class CallService : InCallService() {
         CallManager.inCallService = this
         call.registerCallback(callListener)
         sendCallUpdateBroadcast(call)
+        startBroadcastTimer()
 
         // Incoming/Outgoing (locked): high priority (FSI)
         // Incoming (unlocked): if user opted in, low priority ➜ manual activity start, otherwise high priority (FSI)
@@ -87,6 +98,7 @@ class CallService : InCallService() {
         EventBus.getDefault().post(Events.RefreshCallLog)
         if (CallManager.getPhoneState() == NoCall) {
             CallManager.inCallService = null
+            stopBroadcastTimer()
 //            callNotificationManager.cancelNotification()
         } else {
             callNotificationManager.setupNotification()
@@ -118,10 +130,33 @@ class CallService : InCallService() {
     override fun onDestroy() {
         super.onDestroy()
         callNotificationManager.cancelNotification()
+        stopBroadcastTimer()
 
         try {
             if (baseConfig.flashForAlerts) MyCameraImpl.newInstance(this).stopSOS()
         } catch (_: Exception) { }
+    }
+
+    private fun startBroadcastTimer() {
+        if (broadcastRunnable != null) return
+
+        broadcastRunnable = object : Runnable {
+            override fun run() {
+                val primaryCall = CallManager.getPrimaryCall()
+                if (primaryCall != null && (primaryCall.getStateCompat() == Call.STATE_ACTIVE || primaryCall.getStateCompat() == Call.STATE_DIALING || primaryCall.getStateCompat() == Call.STATE_CONNECTING)) {
+                    sendCallUpdateBroadcast(primaryCall)
+                    broadcastHandler.postDelayed(this, 1000)
+                } else {
+                    stopBroadcastTimer()
+                }
+            }
+        }
+        broadcastHandler.post(broadcastRunnable!!)
+    }
+
+    private fun stopBroadcastTimer() {
+        broadcastRunnable?.let { broadcastHandler.removeCallbacks(it) }
+        broadcastRunnable = null
     }
 
     private fun sendCallUpdateBroadcast(call: Call) {

@@ -351,7 +351,7 @@ class SettingsActivity : SimpleActivity() {
             else getString(R.string.off)
 
         val getProperTextColor = getProperTextColor()
-        val red = resources.getColor(R.color.red_missed, theme)
+        val red = resources.getColor(R.color.red_missed, this@SettingsActivity.theme)
         val colorUnknown = if (baseConfig.blockUnknownNumbers) red else getProperTextColor
         val alphaUnknown = if (baseConfig.blockUnknownNumbers) 1f else 0.6f
         settingsManageBlockedNumbersIconUnknown.apply {
@@ -1166,7 +1166,7 @@ class SettingsActivity : SimpleActivity() {
                         config.groupSubsequentCalls = false
                         config.groupAllCalls = true
                     }
-                    else -> {
+                    GROUP_CALLS_NO -> {
                         config.groupSubsequentCalls = false
                         config.groupAllCalls = false
                     }
@@ -1430,7 +1430,7 @@ class SettingsActivity : SimpleActivity() {
                         this@SettingsActivity,
                         color = config.simIconsColors[1],
                         addDefaultColorButton = true,
-                        colorDefault = resources.getColor(R.color.ic_dialer, theme),
+                        colorDefault = resources.getColor(R.color.ic_dialer, this@SettingsActivity.theme),
                         title = resources.getString(R.string.color_sim_card_icons)
                     ) { wasPositivePressed, color, wasDefaultPressed ->
                         if (wasPositivePressed || wasDefaultPressed) {
@@ -1446,7 +1446,7 @@ class SettingsActivity : SimpleActivity() {
                         this@SettingsActivity,
                         color = config.simIconsColors[2],
                         addDefaultColorButton = true,
-                        colorDefault = resources.getColor(R.color.color_primary, theme),
+                        colorDefault = resources.getColor(R.color.color_primary, this@SettingsActivity.theme),
                         title = resources.getString(R.string.color_sim_card_icons)
                     ) { wasPositivePressed, color, wasDefaultPressed ->
                         if (wasPositivePressed || wasDefaultPressed) {

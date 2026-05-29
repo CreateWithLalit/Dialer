@@ -3,8 +3,7 @@ package com.goodwy.dialer.helpers
 import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
-import android.app.NotificationManager.IMPORTANCE_DEFAULT
-import android.app.NotificationManager.IMPORTANCE_HIGH
+import android.app.NotificationManager.IMPORTANCE_LOW
 import android.app.PendingIntent
 import android.app.Person
 import android.content.Context
@@ -213,7 +212,7 @@ class CallNotificationManager(private val context: Context) {
             context.getString(R.string.call_notification_channel)
         }
 
-        val importance = if (isHighPriority) IMPORTANCE_HIGH else IMPORTANCE_DEFAULT
+        val importance = IMPORTANCE_LOW
         NotificationChannel(channelId, name, importance).apply {
 //            lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             setSound(null, null)
@@ -412,7 +411,7 @@ class CallNotificationManager(private val context: Context) {
             val callState = CallManager.getState()
             val isHighPriority = callState == Call.STATE_RINGING && !lowPriority
             val channelId = if (isHighPriority) "right_dialer_call_high_priority" else "right_dialer_call"
-            val importance = if (isHighPriority) IMPORTANCE_HIGH else IMPORTANCE_DEFAULT
+            val importance = IMPORTANCE_LOW
             val name = if (isHighPriority) {
                 context.getString(R.string.call_notification_channel_high_priority)
             } else {
