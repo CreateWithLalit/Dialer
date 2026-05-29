@@ -1,5 +1,6 @@
 package com.goodwy.dialer.services
 
+import android.content.Intent
 import android.telecom.Call
 import android.telecom.CallAudioState
 import android.telecom.InCallService
@@ -9,6 +10,7 @@ import com.goodwy.commons.extensions.hasPermission
 import com.goodwy.commons.helpers.PERMISSION_POST_NOTIFICATIONS
 import com.goodwy.dialer.activities.CallActivity
 import com.goodwy.dialer.extensions.config
+import com.goodwy.dialer.extensions.getStateCompat
 import com.goodwy.dialer.extensions.isOutgoing
 import com.goodwy.dialer.extensions.keyguardManager
 import com.goodwy.dialer.extensions.powerManager
@@ -33,6 +35,8 @@ class CallService : InCallService() {
             try {
                 if (baseConfig.flashForAlerts) MyCameraImpl.newInstance(context).stopSOS()
             } catch (_: Exception) { }
+
+            sendCallUpdateBroadcast(call)
         }
     }
 
@@ -41,6 +45,7 @@ class CallService : InCallService() {
         CallManager.onCallAdded(call)
         CallManager.inCallService = this
         call.registerCallback(callListener)
+        sendCallUpdateBroadcast(call)
 
         // Incoming/Outgoing (locked): high priority (FSI)
         // Incoming (unlocked): if user opted in, low priority ➜ manual activity start, otherwise high priority (FSI)
@@ -74,6 +79,7 @@ class CallService : InCallService() {
 
     override fun onCallRemoved(call: Call) {
         super.onCallRemoved(call)
+        sendCallUpdateBroadcast(call)
         call.unregisterCallback(callListener)
         callNotificationManager.cancelNotification()
         val wasPrimaryCall = call == CallManager.getPrimaryCall()
@@ -116,6 +122,32 @@ class CallService : InCallService() {
         try {
             if (baseConfig.flashForAlerts) MyCameraImpl.newInstance(this).stopSOS()
         } catch (_: Exception) { }
+    }
+
+    private fun sendCallUpdateBroadcast(call: Call) {
+        val state = when (call.getStateCompat()) {
+            Call.STATE_RINGING -> "RINGING"
+            Call.STATE_ACTIVE, Call.STATE_DIALING, Call.STATE_CONNECTING, Call.STATE_HOLDING -> "ONGOING"
+            Call.STATE_DISCONNECTED, Call.STATE_DISCONNECTING -> "DISCONNECTED"
+            else -> "ONGOING"
+        }
+
+        val number = call.details.handle?.schemeSpecificPart ?: ""
+
+        getCallContact(this, call) { contact ->
+            val intent = Intent("com.miui.dynamicisland.CALL_UPDATE")
+            intent.setPackage("com.miui.dynamicisland")
+            intent.putExtra("state", state)
+            intent.putExtra("number", number)
+            intent.putExtra("name", contact.name)
+            val duration = if (call.getStateCompat() == Call.STATE_ACTIVE) {
+                System.currentTimeMillis() - call.details.connectTimeMillis
+            } else {
+                0L
+            }
+            intent.putExtra("duration", duration)
+            sendBroadcast(intent)
+        }
     }
 }
 
